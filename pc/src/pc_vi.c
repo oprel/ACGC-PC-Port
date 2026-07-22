@@ -1,6 +1,7 @@
 /* pc_vi.c - video interface → SDL window swap + frame pacing */
 #include "pc_platform.h"
 #include "pc_profiler.h"
+#include "pc_save_location.h"
 
 #define VI_TVMODE_NTSC_INT    0
 #define VI_TVMODE_NTSC_DS     1
@@ -49,6 +50,8 @@ void VIWaitForRetrace(void) {
         return;
     }
     pc_profiler_add_time(PC_PROF_TIMER_POLL_EVENTS, t_before_poll);
+
+    pc_save_lock_heartbeat();
 
     /* Drain the frame's last deferred batch here so its cost bills to
      * gx_flush instead of inflating the swap timer. */

@@ -3,6 +3,7 @@
 #include "pc_gx_internal.h"
 #include "pc_texture_pack.h"
 #include "pc_settings.h"
+#include "pc_save_location.h"
 #include "pc_keybindings.h"
 #include "pc_assets.h"
 #include "pc_disc.h"
@@ -132,6 +133,7 @@ static void pc_speedhack_toggle(void) {
 }
 
 void pc_platform_shutdown(void) {
+    pc_save_lock_release();
     pc_audio_shutdown();
     pc_audio_mq_shutdown();
     PADCleanup();
@@ -381,6 +383,7 @@ int main(int argc, char* argv[]) {
 
     SDL_SetMainReady();
     pc_settings_load();
+    pc_save_location_init();
     pc_keybindings_load();
     pc_platform_init();
     pc_disc_init();
@@ -389,11 +392,7 @@ int main(int argc, char* argv[]) {
             "No game data found.\n\n"
             "Animal Crossing needs the original GameCube ROM to run.\n"
             "Place a disc image (.iso, .gcm, or .ciso) to the \"rom\" subfolder.";
-        fprintf(stderr, "[PC] %s\n", msg);
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
-                                 "Animal Crossing - Missing ROM", msg, g_pc_window);
-        pc_platform_shutdown();
-        return 1;
+        pc_fatal_error_and_exit("Animal Crossing - Missing ROM", msg);
     }
 
     ac_entry();                         /* sets HotStartEntry = &entry */
@@ -402,4 +401,11 @@ int main(int argc, char* argv[]) {
     pc_disc_shutdown();
     pc_platform_shutdown();
     return 0;
+}
+
+void pc_fatal_error_and_exit(const char* title, const char* message) {
+    fprintf(stderr, "[PC] %s\n", message);
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title, message, g_pc_window);
+    pc_platform_shutdown();
+    exit(1);
 }

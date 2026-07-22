@@ -99,6 +99,7 @@ void pc_platform_init(void);
 void pc_platform_shutdown(void);
 void pc_platform_swap_buffers(void);
 int  pc_platform_poll_events(void);
+void pc_fatal_error_and_exit(const char* title, const char* message);
 
 /* EXE image range for seg2k0 pointer disambiguation (vs N64 segment addresses) */
 extern unsigned int pc_image_base;

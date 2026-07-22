@@ -19,6 +19,7 @@ PCSettings g_pc_settings = {
     .master_volume = 100,
     .stick_deadzone = 12,
     .cstick_deadzone = 12,
+    .save_location = "",
 };
 
 static const char* SETTINGS_FILE = "settings.ini";
@@ -65,7 +66,11 @@ static const char* DEFAULT_SETTINGS =
     "[Input]\n"
     "# Gamepad stick deadzones as a percentage (0-40)\n"
     "stick_deadzone = 12\n"
-    "cstick_deadzone = 12\n";
+    "cstick_deadzone = 12\n"
+    "\n"
+    "[Save]\n"
+    "# Custom save folder. (Keep empty for default save folder)\n"
+    "save_location = \n";
 
 static const char* skip_ws(const char* s) {
     while (*s == ' ' || *s == '\t') s++;
@@ -81,7 +86,16 @@ static void trim_end(char* s) {
 }
 
 static void apply_setting(const char* key, const char* value) {
-    int val = atoi(value);
+    int val;
+
+    /* String setting - handle before the numeric ones below. */
+    if (strcmp(key, "save_location") == 0) {
+        strncpy(g_pc_settings.save_location, value, sizeof(g_pc_settings.save_location) - 1);
+        g_pc_settings.save_location[sizeof(g_pc_settings.save_location) - 1] = '\0';
+        return;
+    }
+
+    val = atoi(value);
 
     if (strcmp(key, "window_width") == 0) {
         if (val >= 640) g_pc_settings.window_width = val;
@@ -199,6 +213,10 @@ void pc_settings_save(void) {
     fprintf(f, "# Gamepad stick deadzones as a percentage (0-40)\n");
     fprintf(f, "stick_deadzone = %d\n", g_pc_settings.stick_deadzone);
     fprintf(f, "cstick_deadzone = %d\n", g_pc_settings.cstick_deadzone);
+    fprintf(f, "\n");
+    fprintf(f, "[Save]\n");
+    fprintf(f, "# Custom save folder. (Keep empty for default save folder)\n");
+    fprintf(f, "save_location = %s\n", g_pc_settings.save_location);
     fclose(f);
     printf("[Settings] Saved %s\n", SETTINGS_FILE);
 }

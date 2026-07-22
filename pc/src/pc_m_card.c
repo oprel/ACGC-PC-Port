@@ -26,6 +26,8 @@
 #include "zurumode.h"
 #include "pc_save_bswap.h"
 #include "pc_settings.h"
+#include "pc_save_location.h"
+#include "pc_platform.h"
 #include "m_cockroach.h"
 #include "m_all_grow_ovl.h"
 #include "m_home.h"
@@ -43,18 +45,24 @@
 #endif
 #include <dolphin/os.h>  /* OSReport */
 
-/* --- Path constants --- */
-#define PC_CARD_A_DIR     "save/card_a"
-#define PC_CARD_B_DIR     "save/card_b"
 #define PC_GCI_FILENAME   "DobutsunomoriP_MURA.gci"
-#define PC_GCI_PATH       PC_CARD_A_DIR "/" PC_GCI_FILENAME
-#define PC_GCI_TMP_PATH   PC_CARD_A_DIR "/" PC_GCI_FILENAME ".tmp"
-#define PC_SAVE_DIR       "save"
 #define PC_SAVE_MAX_BACKUPS 3
 
-/* Legacy paths for migration from flat save/ layout */
-#define PC_GCI_PATH_LEGACY     "save/DobutsunomoriP_MURA.gci"
-#define PC_GCI_TMP_PATH_LEGACY "save/DobutsunomoriP_MURA.gci.tmp"
+static char s_save_dir[512];             /* pc_save_root(), cached */
+static char s_card_a_dir[512];           /* <root>/card_a */
+static char s_card_b_dir[512];           /* <root>/card_b */
+static char s_gci_path[512];             /* <root>/card_a/<PC_GCI_FILENAME> */
+static char s_gci_tmp_path[512];         /* <root>/card_a/<PC_GCI_FILENAME>.tmp */
+static char s_gci_path_legacy[512];      /* legacy flat layout: <root>/<PC_GCI_FILENAME> */
+static char s_gci_tmp_path_legacy[512];  /* legacy flat layout, .tmp */
+
+#define PC_SAVE_DIR             s_save_dir
+#define PC_CARD_A_DIR           s_card_a_dir
+#define PC_CARD_B_DIR           s_card_b_dir
+#define PC_GCI_PATH             s_gci_path
+#define PC_GCI_TMP_PATH         s_gci_tmp_path
+#define PC_GCI_PATH_LEGACY      s_gci_path_legacy
+#define PC_GCI_TMP_PATH_LEGACY  s_gci_tmp_path_legacy
 
 #define GCI_HEADER_SIZE      sizeof(CARDDir)        /* 64 bytes */
 #define GCI_FILE_DATA_SIZE   mCD_LAND_SAVE_SIZE     /* 0x72000 */
@@ -678,13 +686,16 @@ static void pc_save_migrate_legacy(void) {
 
 static int pc_save_scan_gci_dir(void) {
     /* Try common AC save filenames in card_a/ */
-    static const char* gci_names[] = {
-        PC_CARD_A_DIR "/DobutsunomoriP_MURA.gci",
-        PC_CARD_A_DIR "/8P-GAFE-DobutsunomoriP_MURA.gci",
-        NULL
-    };
+    char name0[512], name1[512];
+    const char* gci_names[3];
     int i;
     struct stat st;
+
+    snprintf(name0, sizeof(name0), "%s/DobutsunomoriP_MURA.gci", PC_CARD_A_DIR);
+    snprintf(name1, sizeof(name1), "%s/8P-GAFE-DobutsunomoriP_MURA.gci", PC_CARD_A_DIR);
+    gci_names[0] = name0;
+    gci_names[1] = name1;
+    gci_names[2] = NULL;
 
     for (i = 0; gci_names[i] != NULL; i++) {
         if (stat(gci_names[i], &st) == 0) {
@@ -730,6 +741,14 @@ int pc_save_check_and_load(void) {
     }
 
     pc_ensure_save_dirs();
+
+    /* Stop loading if we don't own .LOCK file (somebody else is already playing this save file)*/
+    char lock_msg[512];
+    if (!pc_save_lock_acquire(pc_save_root(), lock_msg, sizeof(lock_msg))) {
+        OSReport("[PC] Save directory locked: %s\n", lock_msg);
+        pc_fatal_error_and_exit("Animal Crossing - Save In Use", lock_msg);
+    }
+    
     pc_save_migrate_legacy();
 
     if (stat(PC_GCI_PATH, &st) == 0) {
@@ -791,6 +810,16 @@ static int pc_card_b_find_town(void) {
 /* --- Memory card API implementation --- */
 
 void mCD_init_card(void) {
+    /* Cache paths for save files */
+    const char* root = pc_save_root();
+    snprintf(s_save_dir, sizeof(s_save_dir), "%s", root);
+    snprintf(s_card_a_dir, sizeof(s_card_a_dir), "%s/card_a", root);
+    snprintf(s_card_b_dir, sizeof(s_card_b_dir), "%s/card_b", root);
+    snprintf(s_gci_path, sizeof(s_gci_path), "%s/%s", s_card_a_dir, PC_GCI_FILENAME);
+    snprintf(s_gci_tmp_path, sizeof(s_gci_tmp_path), "%s/%s.tmp", s_card_a_dir, PC_GCI_FILENAME);
+    snprintf(s_gci_path_legacy, sizeof(s_gci_path_legacy), "%s/%s", root, PC_GCI_FILENAME);
+    snprintf(s_gci_tmp_path_legacy, sizeof(s_gci_tmp_path_legacy), "%s/%s.tmp", root, PC_GCI_FILENAME);
+
     CARDInit();
 }
 
