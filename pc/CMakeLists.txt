@@ -426,7 +426,7 @@ else()
 endif()
 
 if(WIN32)
-    target_link_libraries(ac_pc opengl32 winmm imm32 version setupapi)
+    target_link_libraries(ac_pc opengl32 winmm imm32 version setupapi winhttp)
 else()
     find_package(OpenGL REQUIRED)
     target_link_libraries(ac_pc OpenGL::GL dl pthread m)

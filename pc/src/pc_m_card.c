@@ -435,6 +435,8 @@ static int pc_save_write_gci_to(const char* gci_path, const char* tmp_path) {
     fclose(fp);
     free(file_data);
 
+    if (pc_save_is_remote()) pc_save_http_save_from_file(tmp_path);
+
     pc_save_rotate_backups(gci_path);
     if (rename(tmp_path, gci_path) != 0) {
         OSReport("[PC] GCI save: rename '%s' -> '%s' failed, recovering...\n",
@@ -460,6 +462,8 @@ static int pc_save_read_gci(const char* path) {
     Save_t* save_src;
     u32 offset;
     long file_size;
+
+    if (pc_save_is_remote() && !pc_save_http_load_to_file(path)) return FALSE;
 
     fp = fopen(path, "rb");
     if (!fp) {
@@ -576,7 +580,6 @@ static int pc_save_read_gci_to_keep(const char* path) {
     CARDDir dir_hdr;
     u8* file_data;
     Save_t* save_src;
-    u32 offset;
 
     fp = fopen(path, "rb");
     if (!fp) return FALSE;
@@ -743,13 +746,15 @@ int pc_save_check_and_load(void) {
     pc_ensure_save_dirs();
 
     /* Stop loading if we don't own .LOCK file (somebody else is already playing this save file)*/
-    char lock_msg[512];
-    if (!pc_save_lock_acquire(pc_save_root(), lock_msg, sizeof(lock_msg))) {
-        OSReport("[PC] Save directory locked: %s\n", lock_msg);
-        pc_fatal_error_and_exit("Animal Crossing - Save In Use", lock_msg);
-    }
+    pc_save_lock_acquire(pc_save_root());
+
     
     pc_save_migrate_legacy();
+
+    if (pc_save_is_remote() && pc_save_read_gci(PC_GCI_PATH)) {
+        OSReport("[PC] GCI save loaded successfully from remote server\n");
+        return TRUE;
+    }
 
     if (stat(PC_GCI_PATH, &st) == 0) {
         OSReport("[PC] Found GCI save: %s (%ld bytes)\n", PC_GCI_PATH, (long)st.st_size);
@@ -971,6 +976,8 @@ static int pc_read_gci_land_info(const char* path, Save_t* out) {
     CARDDir hdr;
     u8* file_data;
     int ok = FALSE;
+
+    if (pc_save_is_remote()) pc_save_http_load_to_file(path);
 
     fp = fopen(path, "rb");
     if (!fp) return FALSE;
