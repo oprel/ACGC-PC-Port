@@ -175,6 +175,9 @@ static void mTG_cpmail_change_mail_proc(Submenu*, mSM_MenuInfo_c*);
 static void mTG_dump_mail_proc(Submenu*, mSM_MenuInfo_c*);
 static void mTG_dump_item_proc(Submenu*, mSM_MenuInfo_c*);
 static void mTG_send_proc(Submenu*, mSM_MenuInfo_c*);
+#ifdef PC_ENHANCEMENTS
+static void mTG_send_mail_mark_proc(Submenu*, mSM_MenuInfo_c*);
+#endif
 static void mTG_rewrite_proc(Submenu*, mSM_MenuInfo_c*);
 static void mTG_stick_select_proc(Submenu*, mSM_MenuInfo_c*);
 static void mTG_carpet_proc(Submenu*, mSM_MenuInfo_c*);
@@ -264,6 +267,13 @@ static mTG_tag_word_c mTG_tag_word_okuru = {
     "Send            ",
     &mTG_send_proc,
 };
+
+#ifdef PC_ENHANCEMENTS
+static mTG_tag_word_c mTG_tag_word_send_mail_mark = {
+    "Send            ",
+    &mTG_send_mail_mark_proc,
+};
+#endif
 
 static mTG_tag_word_c mTG_tag_word_kakinaosu = {
     "Rewrite         ",
@@ -823,6 +833,13 @@ static mTG_tag_word_c* mTG_send_mail[] = {
     &mTG_tag_word_yameru,
 };
 
+#ifdef PC_ENHANCEMENTS
+static mTG_tag_word_c* mTG_send_mail_mark[] = {
+    &mTG_tag_word_send_mail_mark,
+    &mTG_tag_word_yameru,
+};
+#endif
+
 static mTG_tag_word_c* mTG_field_ticket[] = {
     &mTG_tag_word_zenbutukamu,
     &mTG_tag_word_1maitukamu,
@@ -1140,6 +1157,9 @@ static mTG_tag_data_c mTG_label_table[] = {
     { mTG_tag_nw_select_put, ARRAY_COUNT(mTG_tag_nw_select_put) },           /* mTG_TYPE_TAG_NW_SELECT_PUT */
     { NULL, 0 },                                                             /* mTG_TYPE_76 */
     { mTG_tag_password_item, ARRAY_COUNT(mTG_tag_password_item) },           /* mTG_TYPE_TAG_PASSWORD_ITEM */
+#ifdef PC_ENHANCEMENTS
+    { mTG_send_mail_mark, ARRAY_COUNT(mTG_send_mail_mark) },                 /* mTG_TYPE_SEND_MAIL_MARK */
+#endif
 };
 
 static void mTG_init_tag_data_item_win(Submenu*);
@@ -3580,6 +3600,30 @@ static void mTG_send_proc(Submenu* submenu, mSM_MenuInfo_c* menu_info) {
     mTG_close_window(submenu, menu_info, TRUE);
 }
 
+#ifdef PC_ENHANCEMENTS
+static void mTG_send_mail_mark_proc(Submenu* submenu, mSM_MenuInfo_c* menu_info) {
+    mIV_Ovl_c* inv_ovl = submenu->overlay->inventory_ovl;
+    Submenu_Item_c* item_p = submenu->item_p;
+    int count = 0;
+    int i;
+
+    for (i = 0; i < mPr_INVENTORY_MAIL_COUNT; i++) {
+        if ((inv_ovl->mail_mark_bitfield2 & (1 << i)) != 0) {
+            item_p[count].slot_no = i;
+            item_p[count].item = ITM_QST_LETTER;
+            count++;
+        }
+    }
+    inv_ovl->mail_mark_bitfield2 = 0;
+
+    submenu->selected_item_num = count;
+    submenu->unk_164 = TRUE; /* flags aPG_receive_menu_close_wait to run the batch-send path */
+    submenu->after_mode = aHOI_REQUEST_PUTAWAY;
+    mPlib_request_main_give_from_submenu(ITM_QST_LETTER, submenu->after_mode, FALSE, TRUE);
+    mTG_close_window(submenu, menu_info, TRUE);
+}
+#endif
+
 static void mTG_rewrite_proc(Submenu* submenu, mSM_MenuInfo_c* menu_info) {
     mTG_open_board_init(submenu, menu_info, -1, mSM_BD_OPEN_REWRITE, -1);
 }
@@ -4326,7 +4370,11 @@ static int mTG_mark_enable_check(int menu_type, int param, int table, u8 field_t
                             }
                             break;
                         case mTG_TABLE_MAIL:
-                            if (field_type == mFI_FIELDTYPE2_FG) {
+                            /* mail can be deleted indoors too */
+                        #ifndef PC_ENHANCEMENTS
+                            if (field_type == mFI_FIELDTYPE2_FG) 
+                        #endif
+                            {
                                 res = mTG_MARK_TYPE_INV_FG_MAIL;
                             }
                             break;
@@ -4340,6 +4388,13 @@ static int mTG_mark_enable_check(int menu_type, int param, int table, u8 field_t
                         res = mTG_MARK_TYPE_INV_SELL_ITEM;
                     }
                     break;
+#ifdef PC_ENHANCEMENTS
+                case mSM_IV_OPEN_SEND_MAIL:
+                    if (table == mTG_TABLE_MAIL) {
+                        res = mTG_MARK_TYPE_INV_SEND_MAIL;
+                    }
+                    break;
+#endif
             }
             break;
         case mSM_OVL_MAILBOX:
@@ -4503,6 +4558,20 @@ static int mTG_mark_main_sub(Submenu* submenu, int menu_type, int param, int tab
             }
             break;
         }
+#ifdef PC_ENHANCEMENTS
+        case mTG_MARK_TYPE_INV_SEND_MAIL: {
+            *(u16**)mark_bitfield_p = &inv_ovl->mail_mark_bitfield2;
+            updated_mark_bitfield->field16 = 1 << table_idx;
+            *max_mark_count = mPr_INVENTORY_MAIL_COUNT;
+
+            if (mode != mTG_MARK_CHK && mode != mTG_MARK_OFF && mode != mTG_MARK_CLR) {
+                if (mMl_check_not_used_mail(mail) == TRUE || mMl_check_send_mail(mail) == FALSE) {
+                    return FALSE;
+                }
+            }
+            return TRUE;
+        }
+#endif
         case mTG_MARK_TYPE_MUSIC: {
             *(u32**)mark_bitfield_p = music_ovl->mark_flg;
             updated_mark_bitfield->music_box[(table_idx / 32)] = 1 << ((u32)table_idx - (table_idx / 32) * 32);
@@ -6859,6 +6928,11 @@ static int mTG_select_tag_decide_mail(Submenu* submenu, mSM_MenuInfo_c* menu_inf
                     ret_tag_type = mTG_TYPE_CPACK_MAIL_MARK;
                     break;
                 default:
+#ifdef PC_ENHANCEMENTS
+                    if (menu_info->data0 == mSM_IV_OPEN_SEND_MAIL) {
+                        ret_tag_type = mTG_TYPE_SEND_MAIL_MARK;
+                    } else
+#endif
                     ret_tag_type = mTG_TYPE_FIELD_MAIL_MARK;
                     break;
             }

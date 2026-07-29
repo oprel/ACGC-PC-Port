@@ -298,6 +298,31 @@ void aPG_receive_menu_close_wait(NPC_POSTGIRL_ACTOR *postgirl, GAME_PLAY *play) 
     if (play->submenu.open_flag == FALSE) {
         Submenu_Item_c *submenu_item;
         int next = -1;
+#ifdef PC_ENHANCEMENTS
+        if (play->submenu.unk_164 != FALSE) {
+            int i;
+            int sent_any = FALSE;
+            for (i = 0; i < play->submenu.selected_item_num; i++) {
+                Mail_c *mail = &Now_Private->mail[play->submenu.item_p[i].slot_no];
+                if (mMl_check_not_used_mail(mail) == TRUE) {
+                    continue;
+                }
+                if (aPG_check_destination(mail) == 0) {
+                    mPO_receipt_proc(mail, mPO_SENDTYPE_MAIL);
+                    sent_any = TRUE;
+                }
+                /* else: no room / no recipient / too many pending - leave it in the inventory */
+            }
+            play->submenu.unk_164 = FALSE;
+            if (sent_any) {
+                postgirl->next_action = aPG_ACTION_RECEIVE_AFTER_MSG_END_WAIT;
+                next = 1;
+            } else {
+                postgirl->next_action = aPG_ACTION_CHECK_RECEIVE_AFTER;
+                next = 0;
+            }
+        } else
+#endif
         if (mMl_check_not_used_mail(&play->submenu.mail) == TRUE) {
             postgirl->next_action = aPG_ACTION_CHECK_RECEIVE_AFTER;
             next = 0;
@@ -477,6 +502,10 @@ void aPG_receive_menu_close_wait_init(ACTOR *actorx, GAME *game) {
     Submenu *submenu = &play->submenu;
     mSM_open_submenu(submenu, mSM_OVL_INVENTORY, mSM_IV_OPEN_SEND_MAIL, 0x0);
     mMl_clear_mail(&submenu->mail);
+#ifdef PC_ENHANCEMENTS
+    submenu->selected_item_num = 0;
+    submenu->unk_164 = FALSE;
+#endif
 }
 
 void aPG_deposit_menu_close_wait_init(ACTOR *actorx, GAME *game) {
