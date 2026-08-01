@@ -1,6 +1,7 @@
 #include "pc_save_location.h"
 #include "pc_settings.h"
 #include "pc_platform.h"
+#include "m_common_data.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,7 +21,8 @@
 #endif
 
 #define LOCK_FILENAME ".LOCK"
-#define PC_SAVE_LOCK_HEARTBEAT_SECONDS (60)
+#define PC_SAVE_LOCK_HEARTBEAT_MIN_SECONDS (20)
+#define PC_SAVE_LOCK_HEARTBEAT_MAX_SECONDS (40)
 #define PC_SAVE_LOCK_STALE_SECONDS (30 * 60)
 #define PC_SAVE_ROOT_DEFAULT "save"
 #define PC_SAVE_REMOTE_DIR "save_remote"
@@ -32,7 +34,7 @@ static char     s_remote_url[512] = {0};
 static char     s_remote_token[128] = {0};
 #ifdef _WIN32
 static wchar_t  s_remote_host[256] = {0};
-static char     s_remote_path[400] = {0};
+static char     s_remote_path[512] = {0};
 static INTERNET_PORT s_remote_port = 0;
 static int      s_remote_https = 0;
 #endif
@@ -40,6 +42,17 @@ static int      s_lock_held = 0;
 static int      s_atexit_registered = 0;
 static time_t   s_lock_since = 0;
 static time_t   s_last_heartbeat = 0;
+static int      s_heartbeat_interval = 0;
+
+static int next_heartbeat_interval(void) {
+    static int seeded = 0;
+    if (!seeded) {
+        srand((unsigned)time(NULL));
+        seeded = 1;
+    }
+    return PC_SAVE_LOCK_HEARTBEAT_MIN_SECONDS +
+           rand() % (PC_SAVE_LOCK_HEARTBEAT_MAX_SECONDS - PC_SAVE_LOCK_HEARTBEAT_MIN_SECONDS + 1);
+}
 
 static void get_hostname(char* out, int out_size) {
 #ifdef _WIN32
@@ -61,6 +74,33 @@ static long get_pid(void) {
 #else
     return (long)getpid();
 #endif
+}
+
+static void get_owner_name(char* out, size_t out_size) {
+    char host[128];
+    char player[PLAYER_NAME_LEN + 1];
+    size_t i;
+
+    if (out_size <= 0 || !out) return;
+
+    get_hostname(host, sizeof(host));
+    player[0] = '\0';
+
+    if (Now_Private != NULL && !mPr_NullCheckPlayerName(Now_Private->player_ID.player_name)) {
+        for (i = 0; i < PLAYER_NAME_LEN; ++i) {
+            unsigned char c = Now_Private->player_ID.player_name[i];
+            if (c == '\0' || c == ' ') break;
+            if (i + 1 >= sizeof(player)) break;
+            player[i] = (char)c;
+            player[i + 1] = '\0';
+        }
+    }
+
+    if (player[0] != '\0') {
+        snprintf(out, out_size, "%s (%s)", player, host);
+    } else {
+        snprintf(out, out_size, "%s", host);
+    }
 }
 
 int pc_save_is_remote(void) {
@@ -130,16 +170,15 @@ static void fatal_lock_error_and_exit(const char* body) {
 }
 
 static void build_lock_contents(char* buf, size_t buf_size, time_t since) {
-    char host[128];
+    char owner[256];
 
-    get_hostname(host, sizeof(host));
-
+    get_owner_name(owner, sizeof(owner));
     snprintf(buf, buf_size,
-             "host=%s\n"
+             "owner=%s\n"
              "pid=%ld\n"
              "since=%lld\n"
              "time=%lld\n",
-             host, get_pid(), (long long)since, (long long)time(NULL));
+             owner, get_pid(), (long long)since, (long long)time(NULL));
 }
 
 static int try_create_lock(const char* path, const char* contents) {
@@ -205,7 +244,7 @@ static void overwrite_owned_lock(const char* path, const char* contents) {
 #ifdef _WIN32
 
 static void pc_save_remote_parse_url(const char* url) {
-    wchar_t wide[600], path[400];
+    wchar_t wide[1024], path[512];
     URL_COMPONENTS c;
 
     MultiByteToWideChar(CP_UTF8, 0, url, -1, wide, (int)(sizeof(wide) / sizeof(wide[0])));
@@ -230,8 +269,8 @@ static void pc_save_remote_parse_url(const char* url) {
 static int pc_save_http_request(const char* method, const char* query,
                                  const void* body, size_t body_len,
                                  char* out, size_t out_cap, size_t* out_len) {
-    char object[700];
-    wchar_t wobject[700], wmethod[8];
+    char object[1024];
+    wchar_t wobject[1024], wmethod[8];
     HINTERNET session, connect, request = NULL;
     DWORD status = 0, status_size = sizeof(status);
     char* buf = NULL;
@@ -321,7 +360,7 @@ static int pc_save_http_request(const char* method, const char* query,
 static int pc_save_remote_call(const char* method, const char* action, const char* extra,
                                 const void* body, size_t body_len,
                                 char* out, size_t out_cap, size_t* out_len) {
-    char query[200];
+    char query[256];
     snprintf(query, sizeof(query), "action=%s%s", action, extra ? extra : "");
     return pc_save_http_request(method, query, body, body_len, out, out_cap, out_len);
 }
@@ -352,6 +391,12 @@ int pc_save_http_load_to_file(const char* path) {
         return 1;
     }
 
+    if (len < 64 || memcmp(buf, "GAF", 3) != 0) {
+        free(buf);
+        pc_fatal_error_and_exit("Animal Crossing - Save Error", "Save server returned an invalid save file.");
+        return 0;
+    }
+
     fp = fopen(path, "wb");
     if (!fp || fwrite(buf, 1, len, fp) != len) {
         if (fp) fclose(fp);
@@ -365,7 +410,7 @@ int pc_save_http_load_to_file(const char* path) {
 }
 
 int pc_save_http_save_from_file(const char* path) {
-    char extra[160];
+    char extra[256];
     char* data = NULL;
     long size = 0;
     FILE* fp;
@@ -415,11 +460,11 @@ int pc_save_lock_acquire(const char* dir) {
 
     if (pc_save_is_remote()) {
         char resp[512];
-        char host[128];
-        char extra[200];
+        char owner[256];
+        char extra[256];
 
-        get_hostname(host, sizeof(host));
-        snprintf(extra, sizeof(extra), "&host=%s&pid=%ld", host, get_pid());
+        get_owner_name(owner, sizeof(owner));
+        snprintf(extra, sizeof(extra), "&owner=%s&pid=%ld", owner, get_pid());
 
         if (!pc_save_remote_call("POST", "acquire", extra, NULL, 0,
                                   resp, sizeof(resp), NULL)) {
@@ -490,7 +535,7 @@ int pc_save_lock_acquire(const char* dir) {
 }
 
 void pc_save_lock_release(void) {
-    char extra[160];
+    char extra[256];
 
     if (!s_lock_held) return;
 
@@ -505,6 +550,7 @@ void pc_save_lock_release(void) {
     s_lock_path[0] = '\0';
     s_lock_since = 0;
     s_last_heartbeat = 0;
+    s_heartbeat_interval = 0;
 }
 
 void pc_save_lock_heartbeat(void) {
@@ -514,19 +560,23 @@ void pc_save_lock_heartbeat(void) {
     if (!s_lock_held) return;
 
     now = time(NULL);
-    if (difftime(now, s_last_heartbeat) < PC_SAVE_LOCK_HEARTBEAT_SECONDS) {
+    if (s_heartbeat_interval == 0) s_heartbeat_interval = next_heartbeat_interval();
+    if (difftime(now, s_last_heartbeat) < s_heartbeat_interval) {
         return;
     }
 
     if (pc_save_is_remote()) {
-        char extra[160];
-        snprintf(extra, sizeof(extra), "&token=%s", s_remote_token);
+        char extra[256];
+        char owner[256];
+        get_owner_name(owner, sizeof(owner));
+        snprintf(extra, sizeof(extra), "&token=%s&owner=%s", s_remote_token, owner);
         pc_save_remote_call("POST", "renew", extra, NULL, 0, NULL, 0, NULL);
     } else {
         build_lock_contents(contents, sizeof(contents), s_lock_since);
         overwrite_owned_lock(s_lock_path, contents);
     }
     s_last_heartbeat = now;
+    s_heartbeat_interval = next_heartbeat_interval();
 }
 
 
