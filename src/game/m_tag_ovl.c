@@ -4233,6 +4233,7 @@ static void mTG_catch_proc(Submenu* submenu, mSM_MenuInfo_c* menu_info) {
     int item_cond = mPr_ITEM_COND_NORMAL;
     mActor_name_t* item_p = NULL;
     Mail_c* mail_p = NULL;
+    mActor_name_t item = EMPTY_NO;
 
     if (cur_tag->table == mTG_TABLE_ITEM) {
         idx = mTG_get_table_idx(tag);
@@ -4268,8 +4269,6 @@ static void mTG_catch_proc(Submenu* submenu, mSM_MenuInfo_c* menu_info) {
             }
         }
     } else {
-        mActor_name_t item;
-
         switch (cur_tag->table) {
             case mTG_TABLE_HANIWA:
                 idx = tag->tag_col;
@@ -8179,7 +8178,8 @@ static void mTG_move_func(Submenu* submenu, mSM_MenuInfo_c* menu_info) {
                 mTG_init_tag_data_item_win(submenu);
             }
         } else if (inv_ovl->disp_money != Now_Private->inventory.wallet) {
-            inv_ovl->disp_money += inv_ovl->disp_money_chg_step;
+            /* Advance with the 60 Hz wait timer instead of once per rendered frame. */
+            inv_ovl->disp_money += inv_ovl->disp_money_chg_step * ticks;
         }
     } else if (hand_ovl->info.move_flag == FALSE && hand_ovl->info.act != mHD_ACTION_CLOSE &&
                hand_ovl->info.act != mHD_ACTION_CLOSE2 && hand_ovl->info.act != mHD_ACTION_OPEN) {
