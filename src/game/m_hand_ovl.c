@@ -29,7 +29,12 @@ static cKF_AnimInfo_c mHD_animeTable[mHD_ACTION_NUM] = {
     { &cKF_ba_r_hnd_sasu, 1.0f, 1.0f, 16.0f, cKF_FRAMECONTROL_REPEAT, 0.0f },
 };
 
-static f32 mHD_animeSpdTable[mHD_ACTION_NUM] = { 0.275f, 0.275f, 0.45f, 0.45f, 0.45f, 0.45f, 0.275f };
+#ifdef PC_ENHANCEMENTS
+    /* Speed up grabbing/dropping in inventory */
+    static f32 mHD_animeSpdTable[mHD_ACTION_NUM] = { 0.275f, 0.275f, 0.9f, 0.45f, 0.9f, 0.9f, 0.275f };
+#else
+    static f32 mHD_animeSpdTable[mHD_ACTION_NUM] = { 0.275f, 0.275f, 0.45f, 0.45f, 0.45f, 0.45f, 0.275f };
+#endif
 
 static f32 mHD_hand_offsetX_table[mHD_ACTION_NUM] = { 16.0f, 16.0f, 10.0f, 10.0f, 10.0f, 10.0f, 16.0f };
 static f32 mHD_hand_offsetY_table[mHD_ACTION_NUM] = { 6.0f, 6.0f, 2.0f, 2.0f, 2.0f, 2.0f, 6.0f };
