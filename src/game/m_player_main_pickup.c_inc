@@ -57,7 +57,7 @@ static void Player_actor_setup_main_Pickup(ACTOR* actorx, GAME* game) {
     {
         u32 bell_amount = mPr_GetAmountForMoneyItem(item);
         if (bell_amount > 0 && mPr_GivePossessionBells(bell_amount)) {
-            sAdo_SysTrgStart(SE_REGISTER);
+            //sAdo_SysTrgStart(SE_REGISTER);
             if (target_pos_p != NULL) {
                 mFI_SetFG_common(EMPTY_NO, *target_pos_p, TRUE);
             }
