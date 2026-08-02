@@ -116,7 +116,12 @@ static void trademark_goto_demo_scene(GAME_TRADEMARK* trademark) {
     save = Common_GetPointer(save.save);
     mCPk_InitPak(0);
     n_private = Save_Get(private_data);
+#ifdef PC_ENHANCEMENTS
+    /* Pass data of randomly picked character, instead of just player 0 */
+    Common_Set(now_private, Save_GetPointer(private_data[Common_Get(player_no)]));
+#else
     Common_Set(now_private, n_private);
+#endif
 
     if (mFRm_CheckSaveData() == FALSE) {
         bzero(save, sizeof(Save));
@@ -331,6 +336,21 @@ extern void trademark_cleanup(GAME* game) {
     SoftResetEnable = TRUE;
 }
 
+#ifdef PC_ENHANCEMENTS
+    static int random_player_index() {
+        int player_indices[PLAYER_NUM];
+        int count = 0;
+        int i;
+
+        for (i = 0; i < PLAYER_NUM; i++) {
+            if (Save_Get(private_data[i]).exists == TRUE) {
+                player_indices[count++] = i;
+            }
+        }
+        return count > 0 ? player_indices[RANDOM(count)] : 0;
+    }
+#endif
+
 extern void trademark_init(GAME* game) {
 #ifdef TARGET_PC
     OSReport("[PC] trademark_init: enter\n");
@@ -370,7 +390,12 @@ extern void trademark_init(GAME* game) {
     JW_SetLogoMode(1);
     mMsg_aram_init();
 
+#ifdef PC_ENHANCEMENTS
+    /* Show random playable character on title demo */
+    Common_Set(player_no, random_player_index());
+#else
     Common_Set(player_no, 0);
+#endif
     Common_Set(player_data_mode, 0);
     Common_Set(scene_from_title_demo, -1);
     mNpc_ClearCacheName();

@@ -40,6 +40,10 @@ static u16 get_demo_header(int titledemo_no, int key) {
 extern int mTD_demono_get() {
     if (S_now_demono == mEv_TITLEDEMO_LOGO) {
         S_now_demono = mEv_TITLEDEMO_START1;
+#ifdef PC_ENHANCEMENTS
+        /* Start title demo with random scene */
+        S_now_demono = mEv_TITLEDEMO_START1 + RANDOM(mTD_TITLE_DEMO_NUM);
+#endif
     } else {
         S_now_demono++;
         if (S_now_demono > mTD_TITLE_DEMO_NUM) {
