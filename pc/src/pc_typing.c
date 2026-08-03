@@ -96,21 +96,30 @@ int pc_utf8_to_game_code(const char* text) {
     return -1;
 }
 
+void pc_typing_set_mode(int enabled) {
+    enabled = enabled ? 1 : 0;
+    if (enabled == g_pc_typing_mode) return;
+
+    g_pc_typing_mode = enabled;
+    if (g_pc_typing_mode){
+        SDL_StartTextInput();
+    } else {
+        SDL_StopTextInput();
+    }
+    pc_typing_queue_clear();
+}
+
 void pc_typing_handle_event(const SDL_Event* event) {
     if (event->type == SDL_KEYDOWN) {
         if (event->key.keysym.sym == SDLK_TAB && !event->key.repeat && g_pc_editor_active) {
-            g_pc_typing_mode ^= 1;
-            if (g_pc_typing_mode) {
-                SDL_StartTextInput();
-                pc_typing_queue_clear();
-            } else {
-                SDL_StopTextInput();
-            }
+            pc_typing_set_mode(!g_pc_typing_mode);
         }
 
         if (g_pc_typing_mode && g_pc_editor_active) {
             switch (event->key.keysym.sym) {
                 case SDLK_BACKSPACE: pc_typing_queue_push(PC_TYPING_CMD_BACKSPACE); break;
+                case SDLK_DELETE:    pc_typing_queue_push(PC_TYPING_CMD_RIGHT); 
+                                     pc_typing_queue_push(PC_TYPING_CMD_BACKSPACE); break;
                 case SDLK_RETURN:
                 case SDLK_KP_ENTER:  pc_typing_queue_push(PC_TYPING_CMD_ENTER); break;
                 case SDLK_LEFT:      pc_typing_queue_push(PC_TYPING_CMD_LEFT); break;
@@ -122,7 +131,8 @@ void pc_typing_handle_event(const SDL_Event* event) {
         }
     }
 
-    if (event->type == SDL_TEXTINPUT && g_pc_typing_mode && g_pc_editor_active) {
+    if (event->type == SDL_TEXTINPUT && g_pc_editor_active) {
+        if (!g_pc_typing_mode) pc_typing_set_mode(1);
         const char* p = event->text.text;
         while (*p) {
             int code = pc_utf8_to_game_code(p);
@@ -139,9 +149,7 @@ void pc_typing_handle_event(const SDL_Event* event) {
 
 void pc_typing_update(void) {
     if (g_pc_typing_mode && !g_pc_editor_active) {
-        g_pc_typing_mode = 0;
-        SDL_StopTextInput();
-        pc_typing_queue_clear();
+        pc_typing_set_mode(0);
     }
 }
 

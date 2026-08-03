@@ -4,6 +4,10 @@
 #include "sys_matrix.h"
 #include "m_font.h"
 
+#if defined(TARGET_PC) && defined(KEYBOARD_TYPING)
+#include "pc_typing.h"
+#endif
+
 typedef struct warning_ovl_line_s {
   f32 pos_x;
   f32 pos_y;
@@ -270,7 +274,19 @@ static void mWR_move_Play(Submenu* submenu, mSM_MenuInfo_c* menu_info) {
   u32 trigger = submenu->overlay->menu_control.trigger;
   mWR_Ovl_c* warning_ovl = submenu->overlay->warning_ovl;
 
+#if defined(TARGET_PC) && defined(KEYBOARD_TYPING)
+  /* If no more room when writing with keyboard, dismiss warning with keyboard */
+  extern int g_pc_typing_mode;
+  extern PCTypingQueue g_pc_typing_queue;
+  extern void pc_typing_queue_clear(void);
+  
+  if ((trigger & (BUTTON_A | BUTTON_B | BUTTON_START)) != 0
+  || (g_pc_typing_mode && g_pc_typing_queue.count != 0)) {
+    pc_typing_queue_clear();
+#else
+
   if ((trigger & (BUTTON_A | BUTTON_B | BUTTON_START)) != 0) {
+#endif
     menu_info->proc_status = mSM_OVL_PROC_MOVE;
     menu_info->next_proc_status = mSM_OVL_PROC_END;
     warning_ovl->state = mWR_STATE_OUT;

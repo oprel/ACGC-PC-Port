@@ -1817,7 +1817,6 @@ static void mED_move_Play(Submenu* submenu, mSM_MenuInfo_c* menu_info) {
             extern int pc_typing_queue_pop(int*);
             int pc_typed_char = 0;
             int typed;
-            g_pc_editor_active = 1;
 
             if (g_pc_typing_mode && pc_typing_queue_pop(&typed)) {
                 pc_typed_char = 1;
@@ -2626,6 +2625,17 @@ extern void mED_editor_ovl_construct(Submenu* submenu) {
     mED_editor_ovl_set_proc(submenu);
     submenu->overlay->editor_ovl->end_code_draw = &mED_endCode_draw;
     submenu->overlay->editor_ovl->cursol_draw = &mED_cursol_draw;
+
+    #if defined(TARGET_PC) && defined(KEYBOARD_TYPING)
+    {
+        extern int g_pc_editor_active;
+        extern int g_pc_last_input_keyboard;
+        extern void pc_typing_set_mode(int enabled);
+        g_pc_editor_active = 1;
+        /* Allow keyboard typing immediately if using controller */
+        pc_typing_set_mode(!g_pc_last_input_keyboard);
+    }
+#endif
 }
 
 extern void mED_editor_ovl_destruct(Submenu* submenu) {
