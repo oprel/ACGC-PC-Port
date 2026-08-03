@@ -42,6 +42,16 @@ int           g_pc_last_input_keyboard;
 unsigned int pc_image_base = 0;
 unsigned int pc_image_end  = 0;
 
+static int pc_get_cursor_display_idx(void) {
+    int x, y, n = SDL_GetNumVideoDisplays();
+    SDL_Rect r;
+    SDL_GetGlobalMouseState(&x, &y);
+    for (int i = 0; i < n; i++)
+        if (!SDL_GetDisplayBounds(i, &r) && x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h)
+            return i;
+    return 0;
+}
+
 void pc_platform_init(void) {
 #ifdef _WIN32
     SetProcessDPIAware();
@@ -73,9 +83,10 @@ void pc_platform_init(void) {
         } else if (g_pc_settings.fullscreen == 2) {
             flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
         }
+        int display_idx = pc_get_cursor_display_idx();
         g_pc_window = SDL_CreateWindow(
             PC_WINDOW_TITLE,
-            SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+            SDL_WINDOWPOS_CENTERED_DISPLAY(display_idx), SDL_WINDOWPOS_CENTERED_DISPLAY(display_idx),
             win_w, win_h, flags
         );
     }

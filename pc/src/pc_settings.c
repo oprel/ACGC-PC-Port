@@ -330,6 +330,9 @@ void pc_settings_apply(void) {
     int w = g_pc_settings.window_width;
     int h = g_pc_settings.window_height;
 
+    int display_idx = SDL_GetWindowDisplayIndex(g_pc_window);
+    if (display_idx < 0) display_idx = 0;
+
     switch (g_pc_settings.fullscreen) {
         case 1: {
             /* Exclusive fullscreen at the user's chosen resolution. SDL
@@ -338,8 +341,6 @@ void pc_settings_apply(void) {
             SDL_DisplayMode target = { 0 };
             target.w = w;
             target.h = h;
-            int display_idx = SDL_GetWindowDisplayIndex(g_pc_window);
-            if (display_idx < 0) display_idx = 0;
             SDL_DisplayMode closest;
             if (SDL_GetClosestDisplayMode(display_idx, &target, &closest)) {
                 SDL_SetWindowDisplayMode(g_pc_window, &closest);
@@ -354,7 +355,7 @@ void pc_settings_apply(void) {
             SDL_SetWindowFullscreen(g_pc_window, 0);
             SDL_SetWindowBordered(g_pc_window, SDL_FALSE);
             SDL_SetWindowSize(g_pc_window, w, h);
-            SDL_SetWindowPosition(g_pc_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+            SDL_SetWindowPosition(g_pc_window, SDL_WINDOWPOS_CENTERED_DISPLAY(display_idx), SDL_WINDOWPOS_CENTERED_DISPLAY(display_idx));
             break;
         }
         case 0:
@@ -362,7 +363,7 @@ void pc_settings_apply(void) {
             SDL_SetWindowFullscreen(g_pc_window, 0);
             SDL_SetWindowBordered(g_pc_window, SDL_TRUE);
             SDL_SetWindowSize(g_pc_window, w, h);
-            SDL_SetWindowPosition(g_pc_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+            SDL_SetWindowPosition(g_pc_window, SDL_WINDOWPOS_CENTERED_DISPLAY(display_idx), SDL_WINDOWPOS_CENTERED_DISPLAY(display_idx));
             break;
         }
     }
