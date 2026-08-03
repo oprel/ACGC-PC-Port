@@ -501,6 +501,7 @@ static void Camera2_Get_GoalDistanceAndDirection(GAME_PLAY* play, f32* dist, s_x
 #ifdef PC_ENHANCEMENTS
     /* C-stick camera now works in every scene */
     if (main_index == CAMERA2_PROCESS_NORMAL) {
+        play->camera.last_main_index = main_index == CAMERA2_PROCESS_NORMAL; // for detecting player camera changes in m_kankyo.c
 #else
     if (main_index == CAMERA2_PROCESS_NORMAL && Camera2_InDoorCheck()) {
 #endif
@@ -994,7 +995,7 @@ static void Camera2_setup_main_Wade(GAME_PLAY* play) {
     play->camera.requested_main_index_priority = 9;
 
 #ifdef PC_ENHANCEMENTS
-    /* Reset any outdoor C-stick camera changes instead of a weird double transition */
+    /* Reset any outdoor C-stick camera changes on acre transition instead of a weird double transition */
     if (!mPlib_IsWadeDisabled()){
         play->camera.indoor_distance_addition_idx = 1;
         play->camera.indoor_direction_addition_idx = 1;

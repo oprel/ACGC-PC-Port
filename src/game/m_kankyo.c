@@ -1882,7 +1882,7 @@ static void mEnv_SetFog(GAME_PLAY* play, Kankyo* kankyo, Global_light* global_li
     }
 #ifdef PC_ENHANCEMENTS
     /* reset fog if rotated camera with C-stick outside*/
-    else if  (play->camera.focus_distance != 620.0){
+    else if (play->camera.focus_distance != 620.0 && play->camera.last_main_index == CAMERA2_PROCESS_NORMAL){
         if  (play->camera.now_main_index == CAMERA2_PROCESS_NORMAL || play->camera.now_main_index == CAMERA2_PROCESS_WADE){
             global_light->fogFar = 1000;
             global_light->fogNear = 1000;
