@@ -1380,7 +1380,12 @@ static int mMck_check_key_type_F(u8* str, int len) {
       }
 
       if (sentence_len >= 75) {
+      #ifdef PC_ENHANCEMENTS
+      /* balancing: reduced penalty for long sentences */
+        points -= 50;
+      #else
         points = -150;
+      #endif
         break;
       }
     }
