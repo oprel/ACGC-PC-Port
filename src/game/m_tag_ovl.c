@@ -3398,8 +3398,11 @@ static void mTG_dump_mail_mark_exe_proc(Submenu* submenu, mSM_MenuInfo_c* menu_i
             Mail_c* mail = &Common_Get(now_home)->mailbox[i];
 
             // clear selected mail if it has a present or is from the player (sending)
-            if (mail->present != EMPTY_NO ||
-                (mail->content.font != mMl_FONT_RECV_READ && mail->content.font != mMl_FONT_RECV_PLAYER_PRESENT_READ)) {
+            if (mail->present != EMPTY_NO
+#ifndef PC_ENHANCEMENTS
+                || (mail->content.font != mMl_FONT_RECV_READ && mail->content.font != mMl_FONT_RECV_PLAYER_PRESENT_READ)
+#endif
+            ) {
                 mailbox_ovl->mark_bitfield &= ~(1 << i);
             }
         }
@@ -3415,8 +3418,11 @@ static void mTG_dump_mail_mark_exe_proc(Submenu* submenu, mSM_MenuInfo_c* menu_i
             Mail_c* mail = &cpmail_ovl->card_mail->mail[page][i];
 
             // clear selected mail if it has a present or is from the player (sending)
-            if (mail->present != EMPTY_NO ||
-                (mail->content.font != mMl_FONT_RECV_READ && mail->content.font != mMl_FONT_RECV_PLAYER_PRESENT_READ)) {
+            if (mail->present != EMPTY_NO
+#ifndef PC_ENHANCEMENTS
+                || (mail->content.font != mMl_FONT_RECV_READ && mail->content.font != mMl_FONT_RECV_PLAYER_PRESENT_READ)
+#endif
+            ) {
                 cpmail_ovl->mark_bitfield &= ~(1 << i);
             }
         }
@@ -3431,8 +3437,11 @@ static void mTG_dump_mail_mark_exe_proc(Submenu* submenu, mSM_MenuInfo_c* menu_i
         Mail_c* mail = &Now_Private->mail[i];
 
         // clear selected mail if it has a present or is from the player (sending)
-        if (mail->present != EMPTY_NO ||
-            (mail->content.font != mMl_FONT_RECV_READ && mail->content.font != mMl_FONT_RECV_PLAYER_PRESENT_READ)) {
+        if (mail->present != EMPTY_NO
+#ifndef PC_ENHANCEMENTS
+            || (mail->content.font != mMl_FONT_RECV_READ && mail->content.font != mMl_FONT_RECV_PLAYER_PRESENT_READ)
+#endif
+        ) {
             inv_ovl->mail_mark_bitfield2 &= ~(1 << i);
         }
     }
@@ -4509,8 +4518,10 @@ static int mTG_mark_main_sub(Submenu* submenu, int menu_type, int param, int tab
 
                     if (menu_type == mSM_OVL_MAILBOX) {
                         if (mail->present != EMPTY_NO ||
+#ifndef PC_ENHANCEMENTS
                             (mail->content.font != mMl_FONT_RECV_READ &&
                              mail->content.font != mMl_FONT_RECV_PLAYER_PRESENT_READ) ||
+#endif
                             (mTG_mail_check(mail) & mTG_MAIL_FLAG_RECV) != mTG_MAIL_FLAG_RECV) {
                             return FALSE;
                         }
@@ -4519,8 +4530,11 @@ static int mTG_mark_main_sub(Submenu* submenu, int menu_type, int param, int tab
                             return FALSE;
                         }
                     } else {
-                        if ((mail->content.font != mMl_FONT_RECV_READ &&
+                        if (
+#ifndef PC_ENHANCEMENTS
+                            (mail->content.font != mMl_FONT_RECV_READ &&
                              mail->content.font != mMl_FONT_RECV_PLAYER_PRESENT_READ) ||
+#endif
                             (mTG_mail_check(mail) & mTG_MAIL_FLAG_RECV) != mTG_MAIL_FLAG_RECV ||
                             (mTG_mail_check(mail) & mTG_MAIL_FLAG_PRESENT) == mTG_MAIL_FLAG_PRESENT) {
                             return FALSE;
@@ -6968,15 +6982,19 @@ static int mTG_select_tag_decide_mail(Submenu* submenu, mSM_MenuInfo_c* menu_inf
 
     if (mMl_check_not_used_mail(mail) != TRUE) {
         if (menu_info->menu_type == mSM_OVL_CPMAIL) {
+#ifndef PC_ENHANCEMENTS
             if (mail->content.font == mMl_FONT_RECV_PLAYER_PRESENT || mail->content.font == mMl_FONT_RECV) {
                 return mTG_TYPE_ROOM_RMAIL;
-            } else {
-                return mTG_TYPE_DEF_RMAIL;
             }
+#endif
+            return mTG_TYPE_DEF_RMAIL;
         }
 
         if (menu_info->menu_type == mSM_OVL_MAILBOX) {
-            if (mail->content.font == mMl_FONT_RECV_PLAYER_PRESENT || mail->content.font == mMl_FONT_RECV ||
+            if (
+#ifndef PC_ENHANCEMENTS
+                mail->content.font == mMl_FONT_RECV_PLAYER_PRESENT || mail->content.font == mMl_FONT_RECV ||
+#endif
                 mail->present != EMPTY_NO) {
                 return mTG_TYPE_ROOM_RMAIL;
             } else {
@@ -7002,8 +7020,11 @@ static int mTG_select_tag_decide_mail(Submenu* submenu, mSM_MenuInfo_c* menu_inf
             }
 
             ret = mail_next_type[mail_flags];
-            if (Common_Get(field_type) != mFI_FIELDTYPE2_FG || mail->content.font == mMl_FONT_RECV_PLAYER_PRESENT ||
-                mail->content.font == mMl_FONT_RECV) {
+            if (Common_Get(field_type) != mFI_FIELDTYPE2_FG
+#ifndef PC_ENHANCEMENTS
+                || mail->content.font == mMl_FONT_RECV_PLAYER_PRESENT || mail->content.font == mMl_FONT_RECV
+#endif
+            ) {
                 if (ret == mTG_TYPE_DEF_SMAIL) {
                     ret = mTG_TYPE_ROOM_SMAIL;
                 } else if (ret == mTG_TYPE_DEF_RMAIL) {
