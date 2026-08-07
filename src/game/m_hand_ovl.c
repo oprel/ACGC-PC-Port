@@ -31,7 +31,7 @@ static cKF_AnimInfo_c mHD_animeTable[mHD_ACTION_NUM] = {
 
 #ifdef PC_ENHANCEMENTS
     /* Speed up grabbing/dropping in inventory */
-    static f32 mHD_animeSpdTable[mHD_ACTION_NUM] = { 0.275f, 0.275f, 0.9f, 0.45f, 0.9f, 0.9f, 0.275f };
+    static f32 mHD_animeSpdTable[mHD_ACTION_NUM] = { 0.275f, 0.5f, 0.9f, 0.9f, 0.9f, 0.9f, 0.5f };
 #else
     static f32 mHD_animeSpdTable[mHD_ACTION_NUM] = { 0.275f, 0.275f, 0.45f, 0.45f, 0.45f, 0.45f, 0.275f };
 #endif

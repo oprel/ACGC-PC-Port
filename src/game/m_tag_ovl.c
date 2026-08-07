@@ -8158,7 +8158,8 @@ static void mTG_move_func(Submenu* submenu, mSM_MenuInfo_c* menu_info) {
 #ifdef PC_ENHANCEMENTS
     /* if cursor still moving, buffer inputs that user is sending*/
     if (hand_ovl->info.move_flag) {
-        tag_ovl->buffered_inputs |= submenu->overlay->menu_control.trigger;
+        #define BUTTON_MASK (BUTTON_A | BUTTON_B | BUTTON_X | BUTTON_Y | BUTTON_Z | BUTTON_L | BUTTON_R | BUTTON_START)
+        tag_ovl->buffered_inputs |= (submenu->overlay->menu_control.trigger & BUTTON_MASK);
     }
 #endif
 
