@@ -59,7 +59,7 @@ static void Camera2_DirectionCalc(GAME_PLAY* play) {
     camera->direction_velocity.z = camera->direction.z - dir.z;
 }
 
-int Camera2_InDoorCheck() {
+static int Camera2_InDoorCheck() {
     mActor_name_t field_id = mFI_GetFieldId();
     int res = FALSE;
 
@@ -440,6 +440,10 @@ static void Camera2_Normal_Swing(GAME_PLAY* play, f32* distance, s_xyz* dir) {
 }
 
 static const f32 add_distance_array[3] = { -280.0f, 0.0f, 300.0f };
+#ifdef PC_ENHANCEMENTS
+/* Outdoors camera distances */
+static const f32 add_distance_array_field[3] = { -200.0f, 0.0f, 200.0f };
+#endif
 
 static const s16 add_directionY_array[3] = {
     DEG2SHORT_ANGLE(-16.1f), // -2930
@@ -499,9 +503,9 @@ static void Camera2_Get_GoalDistanceAndDirection(GAME_PLAY* play, f32* dist, s_x
     *dir = direction_array[main_index];
 
 #ifdef PC_ENHANCEMENTS
-    /* C-stick camera now works in every scene */
-    if (main_index == CAMERA2_PROCESS_NORMAL) {
-        play->camera.last_main_index = main_index == CAMERA2_PROCESS_NORMAL; // for detecting player camera changes in m_kankyo.c
+    /* C-stick camera now works outdoors */
+    if ((main_index == CAMERA2_PROCESS_NORMAL || main_index == CAMERA2_PROCESS_WADE) 
+    && (!mEv_CheckFirstIntro() || Camera2_InDoorCheck())) {
 #else
     if (main_index == CAMERA2_PROCESS_NORMAL && Camera2_InDoorCheck()) {
 #endif
@@ -513,7 +517,15 @@ static void Camera2_Get_GoalDistanceAndDirection(GAME_PLAY* play, f32* dist, s_x
             add_dir_idx = 1;
         }
 
+#if PC_ENHANCEMENTS
+    if (Camera2_InDoorCheck()) {
+        *dist += add_distance_array_field[add_dist_idx];
+    } else {
         *dist += add_distance_array[add_dist_idx];
+    }
+#else
+        *dist += add_distance_array[add_dist_idx];
+#endif
         dir->y += add_directionY_array[add_dir_idx];
         dir->x += add_directionX_array[add_dist_idx]; // adjust by add_dist_idx since rotation on X axis should be
                                                       // defined by distance of camera

@@ -299,8 +299,13 @@ static void navigate_camera_move(GAME_PLAY* play) {
 
     switch (S_navigate.mode) {
         case 0: {
-            // always hide camera controls popup when outdoors or when can't control camera
-            if (mPlib_check_able_change_camera_normal_index() != 0 && play->fb_fade_type == FADE_TYPE_NONE && Camera2_InDoorCheck()) {
+        #if PC_ENHANCEMENTS
+            // hide camera controls outdoors
+            int field_type = mFI_GET_TYPE(mFI_GetFieldId());
+            if (mPlib_check_able_change_camera_normal_index() != 0 && play->fb_fade_type == FADE_TYPE_NONE && field_type != mFI_FIELD_FG && field_type != mFI_FIELDTYPE_DEMO) {
+        #else
+            if (mPlib_check_able_change_camera_normal_index() != 0 && play->fb_fade_type == FADE_TYPE_NONE) {
+        #endif
                 S_navigate.timer = 150.0f;
                 S_navigate.mode++;
             }
