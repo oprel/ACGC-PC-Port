@@ -845,6 +845,120 @@ static void mED_input_single_line(Submenu* submenu, mED_Ovl_c* editor_ovl) {
     }
 }
 
+#ifdef PC_ENHANCEMENTS
+static int mED_is_whitespace_char(u8 code) {
+    return code == CHAR_SPACE || code == CHAR_SPACE_2 || code == CHAR_SPACE_3;
+}
+
+static int mED_is_line_break_char(u8 code) {
+    switch (code) {
+        case CHAR_COMMA:
+        case CHAR_PERIOD:
+        case CHAR_COLON:
+        case CHAR_SEMICOLON:
+        case CHAR_QUESTIONMARK:
+        case CHAR_EXCLAMATION:
+        case CHAR_DASH:
+        case CHAR_HYPHEN:
+            return TRUE;
+        default:
+            return mED_is_whitespace_char(code);
+    }
+}
+
+static int mED_line_start(mED_Ovl_c* editor_ovl, int idx) {
+    while (idx > 0 && editor_ovl->input_str[idx - 1] != CHAR_NEW_LINE) {
+        idx--;
+    }
+    return idx;
+}
+
+static int mED_auto_wrap_word(mED_Ovl_c* editor_ovl) {
+    int line_start = mED_line_start(editor_ovl, editor_ovl->cursor_idx);
+    int width = mFont_GetStringWidth(editor_ovl->input_str + line_start, editor_ovl->cursor_idx - line_start, TRUE) +
+               mFont_GetCodeWidth(editor_ovl->now_code, TRUE);
+    int brk;
+    int i;
+
+    if (width <= editor_ovl->line_width) return FALSE; // still fits
+
+    { //don't wrap on final line
+        int row = 0;
+        for (i = 0; i < line_start; i++) {
+            if (editor_ovl->input_str[i] == CHAR_NEW_LINE) {
+                row++;
+            }
+        }
+        if (row >= editor_ovl->max_line_no - 1) return FALSE;
+    }
+
+    if (mED_is_whitespace_char(editor_ovl->now_code)) {
+        editor_ovl->now_code = CHAR_NEW_LINE;
+        return TRUE;
+    }
+
+    brk = -1;
+    for (i = editor_ovl->cursor_idx - 1; i >= line_start; i--) {
+        if (mED_is_line_break_char(editor_ovl->input_str[i])) {
+            brk = i;
+            break;
+        }
+    }
+    if (brk < 0) return FALSE;
+
+    if (mED_is_whitespace_char(editor_ovl->input_str[brk])) {
+        editor_ovl->input_str[brk] = CHAR_NEW_LINE;
+    } else {
+        /* keep punctuation on the word it belongs to */
+        u8* p = editor_ovl->input_str + editor_ovl->now_str_len;
+        for (i = editor_ovl->now_str_len; i > brk + 1; i--) {
+            p[0] = p[-1];
+            p--;
+        }
+        editor_ovl->input_str[brk + 1] = CHAR_NEW_LINE;
+        editor_ovl->now_str_len++;
+        editor_ovl->cursor_idx++;
+    }
+
+    return TRUE;
+}
+
+static void mED_auto_wrap_word_backspace(mED_Ovl_c* editor_ovl) {
+    int line_start = mED_line_start(editor_ovl, editor_ovl->cursor_idx);
+    int prev_line_start;
+    int prev_line_width;
+    int word_end;
+    int i;
+
+    if (line_start == 0) return;
+
+    //check if editing first word of line
+    for (i = line_start; i < editor_ovl->cursor_idx; i++) {
+        if (mED_is_whitespace_char(editor_ovl->input_str[i])) return;
+    }
+
+    prev_line_start = mED_line_start(editor_ovl, line_start - 1);
+    prev_line_width =
+        mFont_GetStringWidth(editor_ovl->input_str + prev_line_start, line_start - 1 - prev_line_start, TRUE);
+    if (prev_line_width < editor_ovl->line_width / 2) return; //probably deliberate break
+
+    word_end = line_start;
+    while (word_end < editor_ovl->now_str_len && !mED_is_whitespace_char(editor_ovl->input_str[word_end]) &&
+           editor_ovl->input_str[word_end] != CHAR_NEW_LINE) {
+        word_end++;
+    }
+
+    {
+        int word_width = mFont_GetStringWidth(editor_ovl->input_str + line_start, word_end - line_start, TRUE);
+        int space_width = mFont_GetCodeWidth(CHAR_SPACE, TRUE);
+
+        if (prev_line_width + space_width + word_width <= editor_ovl->line_width) {
+            editor_ovl->input_str[line_start - 1] = CHAR_SPACE;
+        }
+    }
+}
+#endif
+
 static void mED_input_multi_line_R(Submenu* submenu, mED_Ovl_c* editor_ovl, u8* buf) {
     mSM_MenuInfo_c* menu_info;
     u8* input_p;
@@ -863,6 +977,9 @@ static void mED_input_multi_line_R(Submenu* submenu, mED_Ovl_c* editor_ovl, u8* 
     if (total_characters <= editor_ovl->now_str_len) {
         mED_open_warning_window(submenu, menu_info, mWR_WARNING_WORD_OVER);
     } else {
+#ifdef PC_ENHANCEMENTS
+        mED_auto_wrap_word(editor_ovl);
+#endif
         str_p = editor_ovl->input_str;
         buf_p = buf;
 
@@ -1049,6 +1166,10 @@ static void mED_backspace_func(mED_Ovl_c* editor_ovl) {
     if (editor_ovl->cursor_idx != 0) {
         editor_ovl->cursor_idx--;
         editor_ovl->now_str_len--;
+
+        if (editor_ovl->input_str[editor_ovl->cursor_idx] != CHAR_NEW_LINE){
+            mED_auto_wrap_word_backspace(editor_ovl);
+        }
 
         str_p = editor_ovl->input_str + editor_ovl->cursor_idx;
 
