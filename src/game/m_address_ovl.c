@@ -153,16 +153,32 @@ static void mAD_move_cursol(Submenu* submenu) {
         if (adrs_ovl->selected_entry < adrs_ovl->page_entry_count[adrs_ovl->curIdx] - 1) {
             adrs_ovl->selected_entry++;
             sAdo_SysTrgStart(NA_SE_CURSOL);
-        } else {
+        }
+#ifdef PC_ENHANCEMENTS // Wrap up/down movement on the current page instead of turning the page
+        else {
+            adrs_ovl->selected_entry = 0;
+            sAdo_SysTrgStart(NA_SE_CURSOL);
+        }
+#else
+        else {
             mAD_move_between(submenu, 1);
         }
+#endif
     } else if ((trigger & BUTTON_CUP)) {
         if (adrs_ovl->selected_entry != 0) {
             adrs_ovl->selected_entry--;
             sAdo_SysTrgStart(NA_SE_CURSOL);
-        } else {
+        }
+#ifdef PC_ENHANCEMENTS // Wrap up/down movement on the current page instead of turning the page
+        else {
+            adrs_ovl->selected_entry = adrs_ovl->page_entry_count[adrs_ovl->curIdx] - 1;
+            sAdo_SysTrgStart(NA_SE_CURSOL);
+        }
+#else
+        else {
             mAD_move_between(submenu, -1);
         }
+#endif
     } else if ((trigger & BUTTON_CRIGHT)) {
         mAD_move_between(submenu, 1);
     }
