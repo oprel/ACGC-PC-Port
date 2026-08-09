@@ -328,7 +328,7 @@ static int pc_save_http_request(const char* method, const char* query,
         } else if (status == 409) {
             fatal_lock_error_and_exit(out);
         } else {
-            snprintf(err_desc, sizeof(err_desc), "ERROR: %s", out);
+            snprintf(err_desc, sizeof(err_desc), "UNKNOWN ERROR [%ld]: %s", status, out);
         }
     } else {
         snprintf(err_desc, sizeof(err_desc), "Could not reach the save server. Check your internet connection.");
