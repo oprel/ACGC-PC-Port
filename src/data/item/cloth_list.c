@@ -283,9 +283,9 @@ mActor_name_t cloth_listChristmas[] = {
 };
 
 #ifdef PC_ENHANCEMENTS // only obtainable through wisp for now
-mActor_name_t cloth_Unobtainable[] = {
+mActor_name_t cloth_listUnobtainable[] = {
     // animal island exclusive
-    TM_CLOTH026, //red aloha shirt
+    ITM_CLOTH026, //red aloha shirt
     ITM_CLOTH027, //blue aloha shirt
     // villager's event-only clothing
     ITM_CLOTH018, //plum kimono
