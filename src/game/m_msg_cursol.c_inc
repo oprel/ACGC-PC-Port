@@ -62,6 +62,12 @@ static int mMsg_Main_Cursol_CursolSetTime_ControlCursol(mMsg_Window_c* msg_p, in
     return mMsg_RESULT_VOID;
   }
 
+#ifdef PC_ENHANCEMENTS // Skip built-in dialogue wait codes entirely while L or R is held
+  if (chkButton(BUTTON_L) || chkButton(BUTTON_R)) {
+    return mMsg_RESULT_VOID;
+  }
+#endif
+
   if (set_time > 0.0f) {
     msg_p->cursor_timer = set_time;
 
