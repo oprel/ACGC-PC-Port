@@ -84,6 +84,9 @@ extern mActor_name_t cloth_listA[];
 extern mActor_name_t cloth_listB[];
 extern mActor_name_t cloth_listC[];
 extern mActor_name_t cloth_listEvent[];
+#ifdef PC_ENHANCEMENTS
+extern mActor_name_t cloth_listUnobtainable[];
+#endif
 extern mActor_name_t binsen_listA[];
 extern mActor_name_t binsen_listB[];
 extern mActor_name_t binsen_listC[];
@@ -274,6 +277,9 @@ static mActor_name_t aEGH_not_collect_get() {
     cloth_listB,
     cloth_listC,
     cloth_listEvent,
+#ifdef PC_ENHANCEMENTS
+    cloth_listUnobtainable,
+#endif
     binsen_listA,
     binsen_listB,
     binsen_listC,

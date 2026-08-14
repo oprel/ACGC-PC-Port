@@ -76,6 +76,9 @@ mActor_name_t wall_listEvent[] = {
     0x2739,
     0x273C,
     0x2741,
+#ifdef PC_ENHANCEMENTS // make every item obtainable without external codes/devices
+    ITM_WALL64,  // mushroom mural
+#endif
     EMPTY_NO,
 };
 

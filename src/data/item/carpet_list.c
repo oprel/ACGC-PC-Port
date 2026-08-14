@@ -76,6 +76,9 @@ mActor_name_t carpet_listEvent[] = {
     0x2639,
     0x263C,
     0x2641,
+#ifdef PC_ENHANCEMENTS // make every item obtainable without external codes/devices
+    ITM_CARPET64, // block flooring
+#endif
     EMPTY_NO,
 };
 

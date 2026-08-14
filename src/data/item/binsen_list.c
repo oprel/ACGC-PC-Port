@@ -77,6 +77,16 @@ mActor_name_t binsen_listTrain[] = {
     EMPTY_NO,
 };
 
+#ifdef PC_ENHANCEMENTS //not implemented to be obtainable anywhere at the moment
+mActor_name_t binsen_listUnobtainable[] = {
+    0x20D6, //festive paper
+    0x20D9, //fortune paper
+    0x20F3, //wing paper (HRA)
+    0x20FE, //new year's card
+    EMPTY_NO,
+};
+#endif
+
 mActor_name_t* mSP_binsen_list[mSP_LIST_NUM] = {
     binsen_listA,
     binsen_listB,

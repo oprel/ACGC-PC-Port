@@ -282,6 +282,24 @@ mActor_name_t cloth_listChristmas[] = {
     EMPTY_NO,
 };
 
+#ifdef PC_ENHANCEMENTS // only obtainable through wisp for now
+mActor_name_t cloth_Unobtainable[] = {
+    // animal island exclusive
+    TM_CLOTH026, //red aloha shirt
+    ITM_CLOTH027, //blue aloha shirt
+    // villager's event-only clothing
+    ITM_CLOTH018, //plum kimono
+    ITM_CLOTH019, //somber robe
+    ITM_CLOTH020, //red sweatsuit
+    ITM_CLOTH021, //blue sweatsuit
+    ITM_CLOTH022, //red puffy vest
+    ITM_CLOTH023, //blue puffy vest
+    ITM_CLOTH024, //summer robe
+    ITM_CLOTH025, //bamboo robe
+    EMPTY_NO,
+};
+#endif
+
 mActor_name_t* mSP_cloth_list[mSP_LIST_NUM] = {
     cloth_listA,
     cloth_listB,
