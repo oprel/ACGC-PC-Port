@@ -1534,6 +1534,10 @@ static void mBGMPsComp_main_req_start(mBGMPsComp* ps_comp) {
                 ps_comp->start.req_flag = TRUE;
                 ps_comp->start.flags = (ps_comp->ps[0].cf_flags >> 3) & 1; // crossfade (mBGMPs_FLAG_CROSSFADE)
                 ps_comp->start.bgm_num = ps_comp->ps[0].elem.bgm_num;
+#ifdef PC_ENHANCEMENTS
+                extern u8 sou_bgm_temporary;
+                sou_bgm_temporary = (ps_comp->ps[0].kategorie == mBGM_KATEGORIE_FANFARE);
+#endif
 
                 if (mBGM_check_MD(ps_comp->ps[0].elem.bgm_num) == FALSE) {
                     ps_comp->ps[0].cf_flags |= mBGMPs_FLAG_UPDATE_VOLUME;

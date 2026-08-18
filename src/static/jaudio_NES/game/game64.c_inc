@@ -580,6 +580,12 @@ u8 sou_num3_org;
 SOU_SYS_LEV sou_sys_lev[2];
 
 u8 sou_now_bgm_handle = BGM0_GROUP;
+#ifdef PC_ENHANCEMENTS // support temporary BGM: stops resetting BGM progress when catch fanfare plays
+u8 sou_bgm_temporary;
+u8 sou_bgm_muted_active;
+u8 sou_bgm_muted_num;
+u8 sou_bgm_muted_handle;
+#endif
 f32 SOU_ONGEN_AREA1 = 540.f;
 f32 SOU_ONGEN_AREA2 = 533.f;
 f32 sou_md_bgm_boost_pasent = 1.f;
@@ -1442,6 +1448,21 @@ void Sou_Ongen_Lev_Prog(u8 index) {
 }
 
 void Sou_BgmStart(u8 id, u16 fadeTime) {
+#ifdef PC_ENHANCEMENTS // continue playing muted BGM if exists
+    if (sou_bgm_muted_active) {
+        if (id == sou_bgm_muted_num) {
+            if (sou_now_bgm_handle != sou_bgm_muted_handle) NA_COMMAND_AUDIO_STOP_SEQ(sou_now_bgm_handle, 0);
+            sou_now_bgm_num = id;
+            sou_now_bgm_handle = sou_bgm_muted_handle;
+            sou_bgm_muted_active = 0;
+            NA_COMMAND_AUDIO_GRP_FADE_VOLUME_SCALE(sou_now_bgm_handle, 1.f);
+            return;
+        }
+        NA_COMMAND_AUDIO_STOP_SEQ(sou_bgm_muted_handle, 0);
+        sou_bgm_muted_active = 0;
+    }
+    sou_bgm_muted_num = sou_now_bgm_num;
+#endif
     sou_now_bgm_num = id;
     if (id == BGM_SILENCE) {
         NA_COMMAND_AUDIO_STOP_SEQ(BGM0_GROUP, 0);
@@ -1458,6 +1479,13 @@ void Sou_BgmStart(u8 id, u16 fadeTime) {
         int bb = (u8)(id - BGM_NINTENDO0);
         Na_SysTrgStart(bb + NA_SE_16F);
     } else {
+#ifdef PC_ENHANCEMENTS //mute current BGM if temporarily changed, instead of resetting each time
+        if (sou_bgm_temporary) {
+            sou_bgm_muted_active = 1;
+            sou_bgm_muted_handle = oldBGMHandle;
+            NA_COMMAND_AUDIO_GRP_FADE_VOLUME_SCALE(oldBGMHandle, 0.f);
+        } else
+#endif
         NA_COMMAND_AUDIO_STOP_SEQ(oldBGMHandle, fadeTime);
         NA_COMMAND_AUDIO_STOP_SEQ(sou_now_bgm_handle, 0);
         id = Sou_BgmTenkiConv(id);
