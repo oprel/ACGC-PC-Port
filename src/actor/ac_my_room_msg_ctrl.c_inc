@@ -427,12 +427,32 @@ static void aMR_MsgControlOpenSubmenu(ACTOR* actorx, GAME* game) {
     }
 }
 
+#ifdef PC_ENHANCEMENTS // add multiple items to storage at once
+static void aMR_PutSubmenuItemsInFurniture(ACTOR* actorx, Submenu* submenu) {
+    Submenu_Item_c* submenu_item = submenu->item_p;
+
+    if (submenu_item != NULL) {
+        FTR_ACTOR* ftr_actor = aMR_GetNowDemoFtr(actorx);
+        int i;
+
+        for (i = 0; i < submenu->selected_item_num; i++, submenu_item++) {
+            if (submenu_item->item != EMPTY_NO && aMR_ItemPutInFurniture(ftr_actor, submenu_item->item)) {
+                mPr_SetPossessionItem(Common_Get(now_private), submenu_item->slot_no, EMPTY_NO, mPr_ITEM_COND_NORMAL);
+            }
+        }
+    }
+}
+#endif
+
 static void aMR_MsgControlItemPutIn(ACTOR* actorx, GAME* game) {
     MY_ROOM_ACTOR* my_room = (MY_ROOM_ACTOR*)actorx;
     GAME_PLAY* play = (GAME_PLAY*)game;
     Submenu* submenu = &play->submenu;
 
     if (submenu->process_status == mSM_PROCESS_WAIT) {
+#ifdef PC_ENHANCEMENTS
+        aMR_PutSubmenuItemsInFurniture(actorx, submenu);
+#else
         Submenu_Item_c* submenu_item = submenu->item_p;
 
         if (submenu_item != NULL && submenu_item->item != EMPTY_NO) {
@@ -440,6 +460,7 @@ static void aMR_MsgControlItemPutIn(ACTOR* actorx, GAME* game) {
 
             aMR_ItemPutInFurniture(ftr_actor, submenu_item->item);
         }
+#endif
 
         if (mPlib_request_main_close_furniture_type1(game)) {
             aMR_ChangeDemoFtrStatus(actorx, 5);
@@ -503,6 +524,9 @@ static void aMR_MsgControlItemSetSubmenu(ACTOR* actorx, GAME* game) {
     Submenu* submenu = &play->submenu;
 
     if (submenu->process_status == mSM_PROCESS_WAIT) {
+#ifdef PC_ENHANCEMENTS
+        aMR_PutSubmenuItemsInFurniture(actorx, submenu);
+#else
         Submenu_Item_c* submenu_item = submenu->item_p;
 
         if (submenu_item != NULL && submenu_item->item != EMPTY_NO) {
@@ -510,6 +534,7 @@ static void aMR_MsgControlItemSetSubmenu(ACTOR* actorx, GAME* game) {
 
             aMR_ItemPutInFurniture(ftr_actor, submenu_item->item);
         }
+#endif
 
         if (mPlib_request_main_close_furniture_type1(game)) {
             aMR_ChangeDemoFtrStatus(actorx, 5);

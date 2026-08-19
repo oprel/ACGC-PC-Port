@@ -177,6 +177,7 @@ static void mTG_dump_item_proc(Submenu*, mSM_MenuInfo_c*);
 static void mTG_send_proc(Submenu*, mSM_MenuInfo_c*);
 #ifdef PC_ENHANCEMENTS
 static void mTG_send_mail_mark_proc(Submenu*, mSM_MenuInfo_c*);
+static void mTG_putin_mark_proc(Submenu*, mSM_MenuInfo_c*);
 #endif
 static void mTG_rewrite_proc(Submenu*, mSM_MenuInfo_c*);
 static void mTG_stick_select_proc(Submenu*, mSM_MenuInfo_c*);
@@ -272,6 +273,11 @@ static mTG_tag_word_c mTG_tag_word_okuru = {
 static mTG_tag_word_c mTG_tag_word_send_mail_mark = {
     "Send            ",
     &mTG_send_mail_mark_proc,
+};
+
+static mTG_tag_word_c mTG_tag_word_putin_mark = {
+    "Put Away All    ",
+    &mTG_putin_mark_proc,
 };
 #endif
 
@@ -838,6 +844,11 @@ static mTG_tag_word_c* mTG_send_mail_mark[] = {
     &mTG_tag_word_send_mail_mark,
     &mTG_tag_word_yameru,
 };
+
+static mTG_tag_word_c* mTG_putin_item_mark[] = {
+    &mTG_tag_word_putin_mark,
+    &mTG_tag_word_yameru,
+};
 #endif
 
 static mTG_tag_word_c* mTG_field_ticket[] = {
@@ -1159,6 +1170,7 @@ static mTG_tag_data_c mTG_label_table[] = {
     { mTG_tag_password_item, ARRAY_COUNT(mTG_tag_password_item) },           /* mTG_TYPE_TAG_PASSWORD_ITEM */
 #ifdef PC_ENHANCEMENTS
     { mTG_send_mail_mark, ARRAY_COUNT(mTG_send_mail_mark) },                 /* mTG_TYPE_SEND_MAIL_MARK */
+    { mTG_putin_item_mark, ARRAY_COUNT(mTG_putin_item_mark) },               /* mTG_TYPE_PUTIN_ITEM_MARK */
 #endif
 };
 
@@ -3816,6 +3828,26 @@ static void mTG_putin_proc(Submenu* submenu, mSM_MenuInfo_c* menu_info) {
     }
 }
 
+#ifdef PC_ENHANCEMENTS
+static void mTG_putin_mark_proc(Submenu* submenu, mSM_MenuInfo_c* menu_info) {
+    mIV_Ovl_c* inv_ovl = submenu->overlay->inventory_ovl;
+    Submenu_Item_c* item_p = submenu->item_p;
+    int count = 0;
+    int i;
+
+    for (i = 0; i < mPr_POCKETS_SLOT_COUNT; i++) {
+        if ((inv_ovl->item_mark_bitfield & (1 << i)) != 0) {
+            item_p[count].item = Now_Private->inventory.pockets[i];
+            item_p[count].slot_no = i;
+            count++;
+        }
+    }
+
+    submenu->selected_item_num = count;
+    mTG_close_window(submenu, menu_info, TRUE);
+}
+#endif
+
 static void mTG_music_listen_proc(Submenu* submenu, mSM_MenuInfo_c* menu_info) {
     mTG_tag_c* tag = &submenu->overlay->tag_ovl->tags[0];
     int idx = mTG_get_table_idx(tag);
@@ -4402,6 +4434,11 @@ static int mTG_mark_enable_check(int menu_type, int param, int table, u8 field_t
                         res = mTG_MARK_TYPE_INV_SEND_MAIL;
                     }
                     break;
+                case mSM_IV_OPEN_PUTIN_FTR:
+                    if (table == mTG_TABLE_ITEM) {
+                        res = mTG_MARK_TYPE_INV_PUTIN_ITEM;
+                    }
+                    break;
 #endif
             }
             break;
@@ -4583,6 +4620,18 @@ static int mTG_mark_main_sub(Submenu* submenu, int menu_type, int param, int tab
                 }
             }
             return TRUE;
+        }
+        case mTG_MARK_TYPE_INV_PUTIN_ITEM: {
+            mActor_name_t item = Now_Private->inventory.pockets[table_idx];
+
+            *(u16**)mark_bitfield_p = &inv_ovl->item_mark_bitfield;
+            updated_mark_bitfield->field16 = 1 << table_idx;
+            *max_mark_count = mPr_POCKETS_SLOT_COUNT;
+
+            if ((mode == mTG_MARK_CHK || mode == mTG_MARK_OFF || mode == mTG_MARK_CLR) || item != EMPTY_NO) {
+                return TRUE;
+            }
+            return FALSE;
         }
 #endif
         case mTG_MARK_TYPE_MUSIC: {
@@ -6898,6 +6947,12 @@ static int mTG_select_tag_decide_item(Submenu* submenu, mSM_MenuInfo_c* menu_inf
                     ret_tag_type = mTG_TYPE_SHRINE_ITEM;
                     break;
                 case mSM_IV_OPEN_PUTIN_FTR:
+#ifdef PC_ENHANCEMENTS
+                    if (inv_ovl->item_mark_bitfield != 0 && (inv_ovl->item_mark_bitfield & (1 << idx)) != 0) {
+                        ret_tag_type = mTG_TYPE_PUTIN_ITEM_MARK;
+                        break;
+                    }
+#endif
                 case mSM_IV_OPEN_MINIDISK:
                     ret_tag_type = mTG_TYPE_PUTIN_ITEM;
                     break;
