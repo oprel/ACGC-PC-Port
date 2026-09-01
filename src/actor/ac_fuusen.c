@@ -196,6 +196,13 @@ static void aFSN_moving(ACTOR* actorx, GAME* game) {
     }
   }
   else {
+#ifdef PC_ENHANCEMENTS // target another tree if balloon missed the first one
+    if (fuusen->wind_change_flag == FALSE) {
+      fuusen->_254 = FRAMERATE_TIMER(60); //use unused variable for target cooldown (1 sec)
+    }else if (--fuusen->_254 <= 0) {
+      fuusen->wind_change_flag = FALSE;
+    }
+#endif
     if (fuusen->wind_change_flag == FALSE) {
       static int senkou_check_data[] = { -2500, 0, 2500 };
       s16 new_angle;

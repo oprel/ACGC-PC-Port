@@ -497,6 +497,32 @@ static int aQMgr_actor_talk_request(ACTOR* client) {
     return res;
 }
 
+#ifdef PC_ENHANCEMENTS
+static int aQMgr_CheckAnimalHasActiveQuest(Animal_c* animal) {
+    mQst_delivery_c* delivery = Common_Get(now_private)->deliveries;
+    mQst_errand_c* errand = Common_Get(now_private)->errands;
+    int i;
+
+    for (i = 0; i < mPr_DELIVERY_QUEST_NUM; i++, delivery++) {
+        if (mQst_CheckFreeQuest(&delivery->base) == FALSE &&
+            (mNpc_CheckCmpAnimalPersonalID(&delivery->sender, &animal->id) == TRUE ||
+             mNpc_CheckCmpAnimalPersonalID(&delivery->recipient, &animal->id) == TRUE)) {
+            return TRUE;
+        }
+    }
+
+    for (i = 0; i < mPr_ERRAND_QUEST_NUM; i++, errand++) {
+        if (mQst_CheckFreeQuest(&errand->base) == FALSE &&
+            (mNpc_CheckCmpAnimalPersonalID(&errand->sender, &animal->id) == TRUE ||
+             mNpc_CheckCmpAnimalPersonalID(&errand->recipient, &animal->id) == TRUE)) {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+#endif
+
 static int aQMgr_actor_talk_start(ACTOR* client) {
     int res = FALSE;
 
@@ -505,6 +531,11 @@ static int aQMgr_actor_talk_start(ACTOR* client) {
         mDemo_Set_ListenAble();
 
         if (client->npc_id == SP_NPC_EV_KAMAKURA_0) {
+#ifdef PC_ENHANCEMENTS // can still access normal dialogue if villager is part of active quest
+            if (aQMgr_CheckAnimalHasActiveQuest(((NPC_ACTOR*)client)->npc_info.animal) == TRUE) {
+                l_quest_manager_mode = aQMgr_MODE_SELECT_TALK;
+            }else
+#endif
             if (l_quest_manager_hello == TRUE) {
                 l_quest_manager_mode = aQMgr_MODE_TALK_START_KAMAKURA_HELLO;
             }

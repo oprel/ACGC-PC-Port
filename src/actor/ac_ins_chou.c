@@ -247,7 +247,11 @@ static void aICH_rest_check(aINS_INSECT_ACTOR* insect, GAME* game) {
 
     if (F32_IS_ZERO(insect->f32_work3)) {
         unit = mFI_GetUnitFG(insect->tools_actor.actor_class.world.position);
+#ifdef PC_ENHANCEMENTS // allow butterflies to land on any flower
+        if ((unit != NULL) && (*unit >= FLOWER_PANSIES0 && *unit <= FLOWER_TULIP2)) {
+#else
         if ((unit != NULL) && (*unit == FLOWER_PANSIES0)) {
+#endif
             aICH_setupAction(insect, aINS_INSECT_TYPE_PURPLE_BUTTERFLY, game);
         }
     } else {

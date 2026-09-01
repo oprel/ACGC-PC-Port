@@ -180,7 +180,11 @@ extern void watch_my_step_move(GAME_PLAY* play) {
             if (S_watch_my_step.mode != 0) {
                 if ((mFI_GET_TYPE(mFI_GetFieldId()) == mFI_TYPE(mFI_FIELDTYPE_FG) &&
                      mEv_CheckFirstIntro() != TRUE) || // all items when correct mode outside but not during nook intro
+#ifdef PC_ENHANCEMENTS //show dropped item names in all player houses
+                    (mFI_IS_PLAYER_ROOM(mFI_GetFieldId()) &&
+#else
                     (Common_Get(field_type) == mFI_FIELDTYPE2_PLAYER_ROOM &&
+#endif
                      !ITEM_IS_FTR(window_item)) // Non-furniture items when in player house
                 ) {
                     S_watch_my_step.draw_type = 1;
